@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>一个社科博士生的AI、学术与生活分享</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Noto+Serif+SC:wght@400;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0f172a;
+    --slide-bg: #1e293b;
+    --text: #e2e8f0;
+    --text-secondary: #94a3b8;
+    --accent: #38bdf8;
+    --accent-warm: #f59e0b;
+    --accent-rose: #fb7185;
+    --border: #334155;
+    --card-bg: #1a2332;
+    --highlight: rgba(56,189,248,0.12);
+    --font-sans: 'Noto Sans SC', 'Segoe UI', system-ui, sans-serif;
+    --font-serif: 'Noto Serif SC', 'Georgia', serif;
+  }
+
+  html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); font-family: var(--font-sans); color: var(--text); }
+
+  /* ---- Container ---- */
+  #app {
+    width: 100vw; height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    position: relative;
+  }
+
+  /* ---- Slide ---- */
+  .slide {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 60px 80px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.45s ease, transform 0.45s ease;
+    transform: translateY(12px);
+  }
+  .slide.active { opacity: 1; pointer-events: auto; transform: translateY(0); }
+
+  .slide-inner { max-width: 960px; width: 100%; }
+
+  /* ---- Typography ---- */
+  h1 { font-family: var(--font-serif); font-size: 52px; font-weight: 700; line-height: 1.25; letter-spacing: -0.02em; margin-bottom: 16px; }
+  h1 .hl { color: var(--accent); }
+  h2 { font-size: 34px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 32px; position: relative; }
+  h2::after { content: ''; display: block; width: 48px; height: 4px; background: var(--accent); border-radius: 2px; margin-top: 14px; }
+  h3 { font-size: 22px; font-weight: 600; margin: 28px 0 12px; color: var(--accent-warm); }
+  h4 { font-size: 17px; font-weight: 600; margin: 20px 0 8px; color: var(--accent); }
+
+  p, li { font-size: 20px; line-height: 1.7; color: var(--text-secondary); }
+  li { margin-bottom: 6px; }
+  ul { padding-left: 24px; margin: 8px 0 16px; }
+  .small { font-size: 16px; color: var(--text-secondary); line-height: 1.6; }
+
+  /* ---- Cards ---- */
+  .card-row { display: flex; gap: 16px; margin: 16px 0; flex-wrap: wrap; }
+  .card {
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px 24px; flex: 1; min-width: 200px;
+  }
+  .card h4 { margin-top: 0; font-size: 18px; }
+  .card p, .card li { font-size: 16px; line-height: 1.55; }
+
+  /* ---- Quote / Block ---- */
+  .quote-block {
+    background: var(--highlight); border-left: 4px solid var(--accent);
+    border-radius: 0 8px 8px 0; padding: 20px 28px; margin: 20px 0;
+    font-family: var(--font-serif); font-size: 22px; font-weight: 500;
+    color: #f1f5f9; line-height: 1.6;
+  }
+  .rule-block {
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px 28px; margin: 16px 0;
+    border-left: 4px solid var(--accent-rose);
+  }
+  .rule-block p { color: #f1f5f9; font-weight: 500; font-size: 18px; margin: 6px 0; }
+  .rule-block .icon { color: var(--accent-rose); font-weight: 700; margin-right: 6px; }
+
+  /* ---- Subtitle / meta ---- */
+  .subtitle { font-size: 24px; color: var(--text-secondary); font-weight: 300; margin-bottom: 8px; }
+  .meta   { font-size: 17px; color: var(--text-secondary); margin-top: 24px; line-height: 1.5; }
+
+  /* ---- Progress bar ---- */
+  #progress {
+    position: fixed; bottom: 0; left: 0; height: 3px;
+    background: var(--accent); border-radius: 0 2px 0 0;
+    transition: width 0.35s ease; z-index: 100;
+  }
+
+  /* ---- Nav ---- */
+  #nav {
+    position: fixed; bottom: 24px; right: 32px;
+    display: flex; gap: 10px; z-index: 100;
+  }
+  #nav button {
+    background: var(--card-bg); border: 1px solid var(--border);
+    color: var(--text); border-radius: 8px; padding: 8px 18px;
+    font-size: 15px; cursor: pointer; font-family: var(--font-sans);
+    transition: all 0.2s;
+  }
+  #nav button:hover { background: var(--border); border-color: var(--accent); }
+  #page-num {
+    position: fixed; bottom: 28px; left: 32px;
+    font-size: 14px; color: var(--text-secondary); z-index: 100;
+  }
+  #page-num span { color: var(--accent); font-weight: 600; }
+
+  /* ---- Pulse dot ---- */
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
+  .dot-blue  { background: var(--accent); }
+  .dot-gold  { background: var(--accent-warm); }
+  .dot-rose  { background: var(--accent-rose); }
+
+  /* ---- Signature ---- */
+  .sig { font-size: 15px; color: var(--text-secondary); margin-top: 20px; opacity: 0.7; }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 768px) {
+    .slide { padding: 40px 28px; }
+    h1 { font-size: 36px; }
+    h2 { font-size: 26px; }
+    p, li { font-size: 17px; }
+    .card-row { flex-direction: column; }
+    .meta { font-size: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+<div id="progress"></div>
+<div id="page-num"><span id="cur">1</span> / <span id="tot">13</span></div>
+<div id="nav">
+  <button onclick="prev()">◀ 上一页</button>
+  <button onclick="next()">下一页 ▶</button>
+</div>
+
+<script>
+const slides = [
+// ════════ Slide 0：标题页 ════════
+`
+<div class="slide-inner" style="text-align:center;">
+  <p style="font-size:18px;color:var(--accent);letter-spacing:0.12em;margin-bottom:12px;text-transform:uppercase;">PKUCCME“5班化学会·万花筒大讲堂”第二期</p>
+  <h1>在任何时代<br>都要勇敢面对<span class="hl">真实的自己</span></h1>
+  <p class="subtitle" style="margin-top:12px;">—— 一个社科博士生的 AI、学术与生活分享</p>
+  <div class="meta">
+    张逸凡<br>
+    北京大学政府管理学院政治学（中国政治）专业博士研究生<br>
+    2026 年 6 月 7 日 · 周日
+  </div>
+</div>
+`,
+
+// ════════ Slide 1：第一部分封面 ════════
+`
+<div class="slide-inner" style="text-align:center;">
+  <p style="font-size:18px;color:var(--accent);letter-spacing:0.12em;margin-bottom:8px;">第一部分</p>
+  <h1 style="font-size:44px;">AI 与<span class="hl">学术</span></h1>
+  <p class="subtitle" style="font-size:22px;margin-top:8px;">不做 AI 的附庸，做 AI 的主人</p>
+</div>
+`,
+
+// ════════ Slide 2：激发和优化理论建构 ════════
+`
+<div class="slide-inner">
+  <h2>社科研究者使用 AI的一种路径：打磨理论建构</h2>
+  <p style="margin-bottom:12px;"><strong>我的博士论文研究：</strong>中国古代驿道系统的政治学规律</p>
+  <ul>
+    <li><strong>传统做法：</strong>自己读材料、自己想、导师指点、和同行讨论 —— <strong>仍然是正确且必须的</strong></li>
+    <li><strong>一种补充做法：</strong>让 AI 当<strong>永不疲倦的讨论伙伴</strong></li>
+  </ul>
+  <div class="card-row">
+    <div class="card">
+      <h4>🔑 问题一</h4>
+      <p>AI 会给你一个看起来合理的答案，但<strong>只有你</strong>知道它对你的问题是否作出正向贡献</p>
+    </div>
+    <div class="card">
+      <h4>✂️ 问题二</h4>
+      <p>拒绝臃肿，坚持极简。AI 倾向于<strong>加法</strong>，我需要适时做<strong>减法</strong></p>
+    </div>
+    <div class="card">
+      <h4>🔮 问题三</h4>
+      <p>永不停止自己的思考——AI 帮你高效展开，但只有你能做<strong>最抽象的跳跃和质变</strong></p>
+    </div>
+  </div>
+</div>
+`,
+
+// ════════ Slide 3：核心原则 ════════
+`
+<div class="slide-inner">
+  <h2>与 AI 协作的核心原则</h2>
+  <div class="rule-block" style="margin-top:24px;">
+    <p><span class="icon">▸</span> AI 负责<strong>推演、分析和展开</strong> —— 我全流程把关，负责<strong>判断和决策</strong></p>
+    <p><span class="icon">▸</span> 不要 AI 替我做<strong>价值判断</strong></p>
+    <p><span class="icon">▸</span> AI 说得越顺、越看似合理，越要追问：<strong>“有没有另一种可能？”</strong></p>
+  </div>
+  <p style="text-align:center;margin-top:24px;font-family:var(--font-serif);font-size:22px;color:#f1f5f9;">
+    <strong>批判性思维</strong>——<br>从技术上看，是<strong style="color:var(--accent);">反思的、进步的、理性的</strong><br>从心态上看，是<strong style="color:var(--accent-warm);">开放的、稳定的、成熟的</strong>
+  </p>
+</div>
+`,
+
+// ════════ Slide 4：第二部分封面 ════════
+`
+<div class="slide-inner" style="text-align:center;">
+  <p style="font-size:18px;color:var(--accent-rose);letter-spacing:0.12em;margin-bottom:8px;">第二部分</p>
+  <h1 style="font-size:44px;">AI 与<span class="hl">内心</span></h1>
+  <p class="subtitle" style="font-size:22px;margin-top:8px;">用 AI 认识自己，而不是让它定义你</p>
+</div>
+`,
+
+// ════════ Slide 5：学术之外的AI ════════
+`
+<div class="slide-inner">
+  <h2>学术之外：认识自己</h2>
+  <div class="card-row">
+    <div class="card">
+      <h4>以前“内耗”时</h4>
+      <p>自己“沉思”——但容易陷入更难以走出的循环<br>找朋友聊——有时间、地点的局限，也有经验上的盲点</p>
+    </div>
+    <div class="card" style="border-color:var(--accent-rose);">
+      <h4>AI 提供了新的一种方式</h4>
+      <p>随时随地可以聊的对话者——<strong>不是替代朋友</strong>，但是一种极好的补充</p>
+    </div>
+  </div>
+  <div class="quote-block" style="border-left-color:var(--accent-rose);">
+    <strong>AI 是一面镜子。</strong>
+  </div>
+</div>
+`,
+
+// ════════ Slide 6：苏格拉底式诘问 ════════
+`
+<div class="slide-inner">
+  <h2>方法一：苏格拉底式诘问</h2>
+  <div class="quote-block">
+    “我现在有一个困扰，请不断追问我的假设，<br>不要给我建议，不要迎合我，<strong>只问我问题</strong>。”
+  </div>
+  <p style="margin-top:20px;">效果：从 <strong>“给我答案”</strong> → <strong>“帮助我自己找到答案”</strong></p>
+  <div class="card-row" style="margin-top:16px;">
+    <div class="card"><h4>AI 做的事</h4><p>反复追问、甚至逼问你的前提、假设和观点依据</p></div>
+    <div class="card"><h4>你做的事</h4><p>在被追问中，看清自己真正的想法和盲区</p></div>
+  </div>
+</div>
+`,
+
+// ════════ Slide 7：强制质疑 + 模式识别 ════════
+`
+<div class="slide-inner">
+  <h2>方法二 & 三：强制质疑 + 模式识别</h2>
+  <h3>强制质疑</h3>
+  <div class="quote-block">
+    “请仔细分析我对现状的描述，<br>找出<strong>矛盾之处和认知盲区</strong>。不要安慰我。”
+  </div>
+  <p>利用 AI 的分析能力，同时抵抗它的<strong>讨好倾向</strong>。</p>
+  <h3 style="margin-top:28px;">迭代 / 模式识别</h3>
+  <p>把多次聊天喂回去，让 AI 帮你发现<strong>自己没有注意到的</strong>重复行为 / 思考模式</p>
+</div>
+`,
+
+// ════════ Slide 8：一些原则 ════════
+`
+<div class="slide-inner">
+  <h2>一些原则</h2>
+  <div class="rule-block" style="margin-top:24px;">
+    <p><span class="icon">⚠️</span> 当 AI 开始频繁用<strong>“你说得对”</strong>等话语为你提供情绪价值，必须警惕它在迎合</p>
+  </div>
+  <div class="rule-block">
+    <p><span class="icon">🪞</span> AI 是一面<strong>镜子</strong>，不是一座神像</p>
+  </div>
+  <div class="rule-block">
+    <p><span class="icon">🧭</span> 盲目相信它 → 可能说明你的<strong>自主性缺失</strong><br>💡</span> 被它莫名引起负面情绪 → 可能恰恰说明它<strong>戳中了你的要害</p>
+  </div>
+  <div class="rule-block">
+    <p><span class="icon">❤</span> 所有这些技巧和模式背后，是<strong>不卑不亢、勇敢面对真实自己</strong>的心态</p>
+  </div>
+</div>
+`,
+
+// ════════ Slide 9：第三部分封面 ════════
+`
+<div class="slide-inner" style="text-align:center;">
+  <p style="font-size:18px;color:var(--accent-warm);letter-spacing:0.12em;margin-bottom:8px;">第三部分</p>
+  <h1 style="font-size:44px;"><span class="hl">生活</span>的平衡</h1>
+  <p class="subtitle" style="font-size:22px;margin-top:8px;">找到自己的节奏，比找到标准答案更重要</p>
+</div>
+`,
+
+// ════════ Slide 10：学业与生活的平衡 ════════
+`
+<div class="slide-inner">
+  <h2>学业与生活的平衡</h2>
+  <div class="card-row">
+    <div class="card" style="white-space: nowrap; min-width: 420px;">
+      <h4>我的自我认知</h4>
+      <p>INFP / INTP（虽然 MBTI 也只是一个标签）<br>确实不擅长时间管理，做不到“番茄钟”式生活<br>在能量爆发阶段，的工作效率和质量很高</p>
+    </div>
+    <div class="card" style="white-space: nowrap; min-width: 420px;">
+      <h4>我的模式</h4>
+      <p>“能量爆发式工作 + 迭代调整”<br>不断面对真实的自己，不妄自尊大、不妄自菲薄<br>适合自己才是最好的：动态的迭代 >> 静态的答案</p>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px;">
+    <h4>我的个性化方案</h4>
+    <p>核心不是“做好计划”——因为对我不可行，而是培养对任务耗时的判断力，动态安排时间表<br>仍要有目标意识：以学业为首要目标，其他事情基于剩余时间安排<br>但目光不应过于短浅、视野不应过于狭隘</p>
+  </div>
+</div>
+`,
+
+// ════════ Slide 11：一些小建议 ════════
+`
+<div class="slide-inner">
+  <h2>一些小建议</h2>
+  <div class="rule-block" style="margin-top:20px;">
+    <p><span class="dot dot-blue"></span> 均衡的自我意识：不要用别人的生活模式衡量自己，也不要沉溺在自己的世界中</p>
+  </div>
+  <div class="rule-block">
+    <p><span class="dot dot-gold"></span> 不要被 MBTI 等<strong>人格标签束缚</strong>——敢于认识<strong>真实的自己</strong></p>
+    <p style="margin-left:18px;font-size:16px;color:var(--text-secondary);">自己的身体状态、情绪需求、工作节奏……</p>
+  </div>
+  <div class="rule-block">
+    <p><span class="dot dot-rose"></span> 北大是一个<strong>容错率很高</strong>的地方</p>
+    <p style="margin-left:18px;font-size:16px;color:var(--text-secondary);">失误不可怕，每次失误都是一次<strong>校准和迭代</strong></p>
+  </div>
+</div>
+`,
+
+// ════════ Slide 12：心理学总结 ════════
+`
+<div class="slide-inner">
+  <h2>快速变化的时代，一种自我心理建设</h2>
+  <div class="rule-block" style="margin-top:20px;">
+    <p><span class="icon">1.</span> <strong>用外部对话打破内部循环。</strong>当我们陷入“内耗”时，可能需要一个追问的声音——AI 或他人都可以扮演这个角色，关键是让思考从独白变成对话。</p>
+  </div>
+  <div class="rule-block">
+    <p><span class="icon">2.</span> <strong>主动寻求挑战，而非认可。</strong>大多数人本能地寻求“被赞同”的“情绪价值”，但真正的成长往往来自“被诘问”。当 AI 或朋友指出你的思维盲区或自相矛盾，那一刻的不适，正是成为更好自己的起点。</p>
+  </div>
+  <div class="rule-block">
+    <p><span class="icon">3.</span> <strong>用动态的迭代替代静态的结论。</strong>在前所未有不断变迁的时代，静态的答案稍纵即逝，容易引发持续焦虑。把“动态的迭代”变成一个固定的行为模式，将会让我们找到一个更好的自己。</p>
+  </div>
+  <div class="quote-block" style="margin-top:28px;border-left-color:var(--accent-warm);">
+    勇敢面对<strong style="color:var(--accent);">真实的自己</strong>，才能成为<strong style="color:var(--accent);">更好的自己</strong>。
+  </div>
+</div>
+`,
+
+// ════════ Slide 13：结尾 ════════
+`
+<div class="slide-inner" style="text-align:center;">
+  <p style="font-size:18px;color:var(--accent-rose);letter-spacing:0.12em;margin-bottom:8px;">Q &amp; A</p>
+  <h1 style="font-size:44px;"><span class="hl">谢谢！</span></h1>
+  <p class="subtitle" style="font-size:22px;margin-top:8px;">欢迎提问 &amp; 交流</p>
+  <div class="sig" style="margin-top:32px;">
+    张逸凡 · 北京大学政府管理学院<br>
+    政治学（中国政治）专业博士研究生
+  </div>
+</div>
+`
+];
+
+let current = 0;
+const total = slides.length;
+
+function render() {
+  document.getElementById('app').innerHTML = slides.map((s,i) =>
+    `<div class="slide${i===current?' active':''}">${s}</div>`
+  ).join('');
+  document.getElementById('cur').textContent = current + 1;
+  document.getElementById('tot').textContent = total;
+  document.getElementById('progress').style.width = ((current+1)/total*100)+'%';
+}
+
+function next() { if (current < total-1) { current++; render(); } }
+function prev() { if (current > 0) { current--; render(); } }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); next(); }
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   { e.preventDefault(); prev(); }
+  if (e.key === 'Home') { e.preventDefault(); current = 0; render(); }
+  if (e.key === 'End')  { e.preventDefault(); current = total-1; render(); }
+});
+
+// Touch swipe
+let touchX = 0;
+document.addEventListener('touchstart', e => { touchX = e.changedTouches[0].screenX; });
+document.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].screenX - touchX;
+  if (dx < -60) next();
+  if (dx > 60) prev();
+});
+
+render();
+</script>
+</body>
+</html>
